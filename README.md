@@ -1,6 +1,6 @@
 # Featureswitches
 
-A Ruby gem for interacting with (FeatureSwitches.com)[https://featureswitches.com].  This library is under active development and is likely to change frequently.  Bug reports and pull requests are welcome.
+A Ruby gem for interacting with [FeatureSwitches.com](https://featureswitches.com).  This library is under active development and is likely to change frequently.  Bug reports and pull requests are welcome.
 
 ## Installation
 
