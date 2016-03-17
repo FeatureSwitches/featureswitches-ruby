@@ -8,7 +8,7 @@ class Featureswitches
         @customer_key = customer_key
         @environment_key = environment_key
         @cache_timeout = options[:cache_timeout] ||= 300
-        @dirty_check_interval = options[:dirty_check_interval] ||= 10
+        @check_interval = options[:check_interval] ||= 10
         @last_update = 0
         @last_dirty_check = 0
         @api = options[:api] ||= 'https://api.featureswitches.com/v1/'
@@ -181,7 +181,7 @@ class Featureswitches
         Thread.new do
             loop do
                 dirty_check()
-                sleep(@dirty_check_interval)
+                sleep(@check_interval)
             end
         end
     end
