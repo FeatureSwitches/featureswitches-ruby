@@ -15,7 +15,9 @@ class Featureswitches
 
         @cache = Cache.new
 
-        @dirty_check_thread = do_dirty_check
+        if @cache_timeout > 0
+            @dirty_check_thread = do_dirty_check
+        end
     end
 
     def authenticate
@@ -27,13 +29,16 @@ class Featureswitches
 
     def sync
         endpoint = 'features'
-        response = api_request(endpoint)
 
-        features = response[:data]['features']
+        if @cache_timeout > 0
+            response = api_request(endpoint)
 
-        features.each do |feature|
-            feature['last_sync'] = Time.now.to_i
-            @cache[feature['feature_key']] = feature
+            features = response[:data]['features']
+
+            features.each do |feature|
+                feature['last_sync'] = Time.now.to_i
+                @cache[feature['feature_key']] = feature
+            end
         end
     end
 
@@ -91,7 +96,9 @@ class Featureswitches
             feature = response[:data]['feature']
 
             feature['last_sync'] = Time.now.to_i
-            @cache[feature['feature_key']] = feature
+            if @cache_timeout > 0
+                @cache[feature['feature_key']] = feature
+            end
 
             return feature
         end
@@ -122,6 +129,10 @@ class Featureswitches
     end
 
     def cache_is_stale(feature)
+        if @cache_timeout == 0
+            return true
+        end
+
         cache_expiration = (Time.now.to_i - @cache_timeout)
         if feature['last_sync'] > cache_expiration and @last_dirty_check > cache_expiration
             return false
