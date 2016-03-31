@@ -44,14 +44,27 @@ class Featureswitches
 
     def is_enabled(feature_key, user_identifier=nil, default=false)
         feature = @cache[feature_key]
-        if feature and not cache_is_stale(feature)
-            return enabled_for_user(feature, user_identifier)
-        else
+        if not feature or cache_is_stale(feature)
             feature = get_feature(feature_key)
-            if feature
-                return enabled_for_user(feature, user_identifier)
-            end
         end
+
+        if feature
+            result = enabled_for_user(feature, user_identifier)
+
+            if not result and feature['enabled'] == true and feature['rollout_progress'] < feature['rollout_target']
+                enabled = get_feature_enabled(feature_key, user_identifier)
+
+                if enabled == true and @cache_timeout > 0
+                    feature['include_users'].push(user_identifier)
+                    @cache[feature['feature_key']] = feature
+                end
+
+                return enabled
+            end
+
+            return result
+        end
+
         return default
     end
 
@@ -106,6 +119,22 @@ class Featureswitches
         return nil
     end
 
+    def get_feature_enabled(feature_key, user_identifier)
+        endpoint = 'feature/enabled'
+        params = {
+            'feature_key' => feature_key,
+            'user_identifier' => user_identifier
+        }
+
+        response = api_request(endpoint, params)
+
+        if response[:success]
+            return response[:data]['enabled']
+        end
+
+        return false
+    end
+
     def enabled_for_user(feature, user_identifier)
         if feature['enabled'] and user_identifier
             if feature['include_users'].length > 0
@@ -120,8 +149,10 @@ class Featureswitches
                 else
                     return true
                 end
+            elsif feature['rollout_target'] > 0
+                return false
             end
-        elsif not user_identifier and (feature['include_users'].length > 0 or feature['exclude_users'].length > 0)
+        elsif not user_identifier and (feature['rollout_target'] > 0 or feature['include_users'].length > 0 or feature['exclude_users'].length > 0)
             return false
         end
 
